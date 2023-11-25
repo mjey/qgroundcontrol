@@ -21,6 +21,7 @@ import QGroundControl.FactSystem    1.0
 import QGroundControl.FactControls  1.0
 
 ColumnLayout {
+    id: rootLayout
     width:                  availableWidth
     height:                 (globals.activeVehicle.supportsJSButton ? buttonCol.height : flowColumn.height) + (ScreenTools.defaultFontPixelHeight * 2)
     Connections {
@@ -39,16 +40,21 @@ ColumnLayout {
         y:          ScreenTools.defaultFontPixelHeight / 2
         width:      parent.width
         spacing:    ScreenTools.defaultFontPixelHeight / 2
+
         QGCLabel {
             Layout.preferredWidth:  parent.width
             wrapMode:               Text.WordWrap
             text:                   qsTr("Assigning the same action to multiple buttons requires the press of all those buttons for the action to be taken. This is useful to prevent accidental button presses for critical actions like Arm or Emergency Stop.")
         }
+
         Flow {
             id:                     buttonFlow
             Layout.preferredWidth:  parent.width
             spacing:                ScreenTools.defaultFontPixelWidth
             visible:                !globals.activeVehicle.supportsJSButton
+
+
+
             Repeater {
                 id:             buttonActionRepeater
                 model:          _activeJoystick ? Math.min(_activeJoystick.totalButtonCount, _maxButtons) : []
@@ -76,19 +82,55 @@ ColumnLayout {
                         width:                      ScreenTools.defaultFontPixelWidth * 26
                         model:                      _activeJoystick ? _activeJoystick.assignableActionTitles : []
                         sizeToContents:             true
+                        property int  servoPopupIndex: 0
 
                         function _findCurrentButtonAction() {
                             if(_activeJoystick) {
                                 var i = find(_activeJoystick.buttonActions[modelData])
                                 if(i < 0) i = 0
                                 currentIndex = i
+                                servoPopupIndex = i
                             }
+                            settingsButton.enabled = (currentText === "Servo");
                         }
 
                         Component.onCompleted:  _findCurrentButtonAction()
                         onModelChanged:         _findCurrentButtonAction()
-                        onActivated:            _activeJoystick.setButtonAction(modelData, textAt(index))
+                        onActivated:           {
+                            _activeJoystick.setButtonAction(modelData, textAt(index))
+                           settingsButton.enabled = (textAt(index) === "Servo");
+                        }
                     }
+
+
+                    function openServoSettingPopup(buttonIndex){
+                        var buttonSettings = _activeJoystick.getButtonSettings(buttonIndex)
+                        settingsPopup.servoNumber = buttonSettings.servoNumber;
+                        settingsPopup.pwmValue = buttonSettings.pwmValue;
+                        settingsPopup.repTime = buttonSettings.repTime;
+                        settingsPopup.delay = buttonSettings.delay;
+                        settingsPopup.open();
+                    }
+
+                    function showButtonSettingsPopup(buttonIndex) {
+                        var component = Qt.createComponent("qrc:/src/VehicleSetup/ButtonSettingsPopup.qml");
+                        var popup = component.createObject(parent, {"buttonIndex": buttonIndex});
+                        popup.open();
+                    }
+
+
+
+                    // Settings button
+                    QGCButton {
+                        id: settingsButton
+                        text: qsTr("Settings")
+                        primary: true
+                        property int buttonIndex: index
+                        onClicked: showButtonSettingsPopup(buttonIndex)
+                        enabled: false
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
                     QGCCheckBox {
                         id:                         repeatCheck
                         text:                       qsTr("Repeat")
@@ -219,6 +261,8 @@ ColumnLayout {
                         }
                     }
                 }
+
+
                 QGCCheckBox {
                     id:                         repeatCheck
                     text:                       qsTr("Repeat")
@@ -261,9 +305,77 @@ ColumnLayout {
                     visible:                !hasFirmwareSupport
                     anchors.verticalCenter: parent.verticalCenter
                 }
+
+
+            }
+        }
+    }
+    Popup {
+        id: settingsPopup
+
+        property int servoNumber: 0
+        property int pwmValue: 0
+        property int repTime: 0
+        property int delay: 0
+
+        property int buttonIndex: -1
+
+        signal settingsUpdated(int servoNumber, int pwmValue, int repTime, int delay)
+
+        modal: true
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 10
+
+            TextField {
+                id: servoNumberField
+//                label: "Servo No#"
+                text: settingsPopup.servoNumber.toString()
+            }
+
+            TextField {
+                id: pwmValueField
+//                label: "PWM Value"
+                text: settingsPopup.pwmValue.toString()
+            }
+
+            TextField {
+                id: repTimeField
+//                label: "Rep Time"
+                text: settingsPopup.repTime.toString()
+            }
+
+            TextField {
+                id: delayField
+//                label: "Delay (ms)"
+                text: settingsPopup.delay.toString()
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignRight
+                Layout.fillWidth: true
+
+                Button {
+                    text: qsTr("Save")
+                    onClicked: {
+                        settingsPopup.settingsUpdated(
+                            parseInt(servoNumberField.text),
+                            parseInt(pwmValueField.text),
+                            parseInt(repTimeField.text),
+                            parseInt(delayField.text)
+                        )
+                        settingsPopup.close()
+                    }
+                }
+
+                Button {
+                    text: qsTr("Cancel")
+                    onClicked: settingsPopup.close()
+                }
             }
         }
     }
 }
-
-

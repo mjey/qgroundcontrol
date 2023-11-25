@@ -21,6 +21,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(JoystickManagerLog)
 
+
 /// Joystick Manager
 class JoystickManager : public QGCTool
 {
@@ -54,8 +55,13 @@ public:
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
 
+
+public:
+    static const int ServoAction;
+
 public slots:
     void init();
+//    void openSettingsPopup(int buttonIndex);
 
 signals:
     void activeJoystickChanged(Joystick* joystick);
@@ -68,6 +74,7 @@ private slots:
 
 private:
     void _setActiveJoystickFromSettings(void);
+
 
 private:
     Joystick*                   _activeJoystick;

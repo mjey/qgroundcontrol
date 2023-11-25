@@ -48,10 +48,15 @@ private:
     bool    _repeat = false;
 };
 
+
+
+
 /// Joystick Controller
 class Joystick : public QThread
 {
     Q_OBJECT
+
+
 public:
     Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager);
 
@@ -71,6 +76,36 @@ public:
             , reversed(false) {}
     } Calibration_t;
 
+
+
+    struct ButtonSettings {
+        int servoNumber;
+        int pwmValue;
+        int repTime;
+        int delay;
+
+        ButtonSettings(int servo = 0, int pwm = 800, int rep = 0, int del = 0)
+            : servoNumber(servo), pwmValue(pwm), repTime(rep), delay(del) {}
+
+
+
+        void fromVariantMap(const QVariantMap& map) {
+            servoNumber = map.value("servoNumber", 0).toInt();
+            pwmValue = map.value("pwmValue", 0).toInt();
+            repTime = map.value("repTime", 0).toInt();
+            delay = map.value("delay", 0).toInt();
+        }
+
+        QVariantMap toVariantMap() const {
+            QVariantMap map;
+            map.insert("servoNumber", servoNumber);
+            map.insert("pwmValue", pwmValue);
+            map.insert("repTime", repTime);
+            map.insert("delay", delay);
+            return map;
+        }
+    };
+
     typedef enum {
         rollFunction,
         pitchFunction,
@@ -86,6 +121,8 @@ public:
         ThrottleModeDownZero,
         ThrottleModeMax
     } ThrottleMode_t;
+
+
 
     Q_PROPERTY(QString  name                    READ name                   CONSTANT)
     Q_PROPERTY(bool     calibrated              MEMBER _calibrated          NOTIFY calibratedChanged)
@@ -113,10 +150,17 @@ public:
     Q_PROPERTY(bool     accumulator             READ accumulator            WRITE setAccumulator        NOTIFY accumulatorChanged)
     Q_PROPERTY(bool     circleCorrection        READ circleCorrection       WRITE setCircleCorrection   NOTIFY circleCorrectionChanged)
 
+    Q_PROPERTY(bool     isServoActionSelected   READ isServoActionSelected  WRITE setIsServoActionSelected NOTIFY isServoActionSelectedChanged)
+
     Q_INVOKABLE void    setButtonRepeat     (int button, bool repeat);
     Q_INVOKABLE bool    getButtonRepeat     (int button);
     Q_INVOKABLE void    setButtonAction     (int button, const QString& action);
     Q_INVOKABLE QString getButtonAction     (int button);
+
+    Q_INVOKABLE QVariantMap getButtonSettings(int buttonIndex);
+    Q_INVOKABLE void setButtonSettings(int buttonIndex, const QVariantMap& settings);
+
+
 
     // Property accessors
 
@@ -139,15 +183,20 @@ public:
     void setFunctionAxis(AxisFunction_t function, int axis);
     int getFunctionAxis(AxisFunction_t function);
 
+    bool isServoActionSelected() const;
+    void setIsServoActionSelected(bool selected);
+//    void setButtonSettings(int buttonIndex, const QVariantMap& settings);
+    void moveServo(int servoNumber, int pwmValue);
+
     void stop();
 
-/*
+    /*
     // Joystick index used by sdl library
     // Settable because sdl library remaps indices after certain events
     virtual int index(void) = 0;
     virtual void setIndex(int index) = 0;
 */
-	virtual bool requiresCalibration(void) { return true; }
+    virtual bool requiresCalibration(void) { return true; }
 
     int   throttleMode      ();
     void  setThrottleMode   (int mode);
@@ -217,6 +266,7 @@ signals:
     void setVtolInFwdFlight         (bool set);
     void setFlightMode              (const QString& flightMode);
     void emergencyStop              ();
+    void isServoActionSelectedChanged();
 
 protected:
     void    _setDefaultCalibration  ();
@@ -249,6 +299,8 @@ private:
     void _updateTXModeSettingsKey(Vehicle* activeVehicle);
     int _mapFunctionMode(int mode, int function);
     void _remapAxes(int currentMode, int newMode, int (&newMapping)[maxFunction]);
+
+    QVector<ButtonSettings> _buttonSettingsList;
 
     // Override from QThread
     virtual void run();
@@ -329,6 +381,7 @@ private:
     static const char* _submarineTXModeSettingsKey;
 
     static const char* _buttonActionNone;
+    static const char* _servo;
     static const char* _buttonActionArm;
     static const char* _buttonActionDisarm;
     static const char* _buttonActionToggleArm;
@@ -352,6 +405,8 @@ private:
     static const char* _buttonActionGimbalRight;
     static const char* _buttonActionGimbalCenter;
     static const char* _buttonActionEmergencyStop;
+
+    bool _isServoActionSelected = false;
 
 private slots:
     void _activeVehicleChanged(Vehicle* activeVehicle);

@@ -41,7 +41,9 @@ const char* Joystick::_roverTXModeSettingsKey =         "TXMode_Rover";
 const char* Joystick::_vtolTXModeSettingsKey =          "TXMode_VTOL";
 const char* Joystick::_submarineTXModeSettingsKey =     "TXMode_Submarine";
 
-const char* Joystick::_buttonActionNone =               QT_TR_NOOP("No Action");
+const char* Joystick::_buttonActionNone =               QT_TR_NOOP("No Actian");
+const char* Joystick::_servo =                          QT_TR_NOOP("Servo");
+
 const char* Joystick::_buttonActionArm =                QT_TR_NOOP("Arm");
 const char* Joystick::_buttonActionDisarm =             QT_TR_NOOP("Disarm");
 const char* Joystick::_buttonActionToggleArm =          QT_TR_NOOP("Toggle Arm");
@@ -77,6 +79,9 @@ const char* Joystick::_rgFunctionSettingsKey[Joystick::maxFunction] = {
 
 int Joystick::_transmitterMode = 2;
 
+
+
+
 const float Joystick::_defaultAxisFrequencyHz   = 25.0f;
 const float Joystick::_defaultButtonFrequencyHz = 5.0f;
 const float Joystick::_minAxisFrequencyHz       = 0.25f;
@@ -97,6 +102,57 @@ AssignableButtonAction::AssignableButtonAction(QObject* parent, QString action_,
 {
 }
 
+
+//Joystick::ButtonSettings Joystick::getButtonSettings(int buttonIndex) {
+//    if (buttonIndex >= 0 && buttonIndex < _buttonSettingsList.size()) {
+//        return _buttonSettingsList[buttonIndex];
+//    }
+//    return ButtonSettings();
+//}
+
+QVariantMap Joystick::getButtonSettings(int buttonIndex) {
+    if (buttonIndex >= 0 && buttonIndex < _buttonSettingsList.size()) {
+                return _buttonSettingsList[buttonIndex].toVariantMap();
+    }
+    return QVariantMap();
+}
+
+void Joystick::setButtonSettings(int buttonIndex, const QVariantMap& settings) {
+    if (buttonIndex >= 0 && buttonIndex < _buttonSettingsList.size()) {
+        _buttonSettingsList[buttonIndex].fromVariantMap(settings);
+        // Save settings or emit signal to notify changes
+    }
+}
+
+
+void Joystick::moveServo(int servoNumber, int pwmValue) {
+    if (!_activeVehicle || !_activeVehicle->joystickEnabled()) {
+        qCWarning(JoystickLog) << "No active vehicle or joystick is disabled";
+        return;
+    }
+
+    if (servoNumber < 1 || servoNumber > 16) {
+        qCWarning(JoystickLog) << "Invalid servo number:" << servoNumber;
+        return;
+    }
+    if (pwmValue < 1000 || pwmValue > 2000) {
+        qCWarning(JoystickLog) << "Invalid PWM value:" << pwmValue;
+        return;
+    }
+
+    qCDebug(JoystickLog) << "Moving servo" << servoNumber << "to PWM" << pwmValue;
+
+    _activeVehicle->sendMavCommand(_activeVehicle->defaultComponentId(),
+                                   MAV_CMD_DO_SET_SERVO,
+                                   true,
+                                   servoNumber,
+                                   pwmValue,
+                                   0, 0, 0, 0, 0);
+}
+
+
+
+
 Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatCount, MultiVehicleManager* multiVehicleManager)
     : _name(name)
     , _axisCount(axisCount)
@@ -105,6 +161,7 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     , _hatButtonCount(4 * hatCount)
     , _totalButtonCount(_buttonCount+_hatButtonCount)
     , _multiVehicleManager(multiVehicleManager)
+    , _isServoActionSelected(false)
 {
     _rgAxisValues   = new int[static_cast<size_t>(_axisCount)];
     _rgCalibration  = new Calibration_t[static_cast<size_t>(_axisCount)];
@@ -115,6 +172,9 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int hatC
     for (int i = 0; i < _totalButtonCount; i++) {
         _rgButtonValues[i] = BUTTON_UP;
         _buttonActionArray.append(nullptr);
+    }
+    for (int i = 0; i < _totalButtonCount; ++i) {
+        _buttonSettingsList.append(ButtonSettings());
     }
     _buildActionList(_multiVehicleManager->activeVehicle());
     _updateTXModeSettingsKey(_multiVehicleManager->activeVehicle());
@@ -143,6 +203,17 @@ Joystick::~Joystick()
         if(_buttonActionArray[button]) {
             _buttonActionArray[button]->deleteLater();
         }
+    }
+}
+
+bool Joystick::isServoActionSelected() const {
+    return _isServoActionSelected;
+}
+
+void Joystick::setIsServoActionSelected(bool selected) {
+    if (_isServoActionSelected != selected) {
+        _isServoActionSelected = selected;
+        emit isServoActionSelectedChanged();
     }
 }
 
@@ -192,7 +263,8 @@ void Joystick::_updateTXModeSettingsKey(Vehicle* activeVehicle)
         } else if(activeVehicle->multiRotor()) {
             _txModeSettingsKey = _multiRotorTXModeSettingsKey;
         } else if(activeVehicle->rover()) {
-            _txModeSettingsKey = _roverTXModeSettingsKey;
+            _txModeSettingsKey = _submarineTXModeSettingsKey;
+            //            _txModeSettingsKey = _roverTXModeSettingsKey;
         } else if(activeVehicle->vtol()) {
             _txModeSettingsKey = _vtolTXModeSettingsKey;
         } else if(activeVehicle->sub()) {
@@ -365,13 +437,13 @@ void Joystick::_saveSettings()
         settings.setValue(revTpl.arg(axis), calibration->reversed);
         settings.setValue(deadbndTpl.arg(axis), calibration->deadband);
         qCDebug(JoystickLog) << "_saveSettings name:axis:min:max:trim:reversed:deadband"
-                                << _name
-                                << axis
-                                << calibration->min
-                                << calibration->max
-                                << calibration->center
-                                << calibration->reversed
-                                << calibration->deadband;
+                             << _name
+                             << axis
+                             << calibration->min
+                             << calibration->max
+                             << calibration->center
+                             << calibration->reversed
+                             << calibration->deadband;
     }
 
     // Always save function Axis mappings in TX Mode 2
@@ -388,10 +460,10 @@ void Joystick::_saveSettings()
 // Relative mappings of axis functions between different TX modes
 int Joystick::_mapFunctionMode(int mode, int function) {
     static const int mapping[][6] = {
-        { yawFunction, pitchFunction, rollFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
-        { yawFunction, throttleFunction, rollFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction },
-        { rollFunction, pitchFunction, yawFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
-        { rollFunction, throttleFunction, yawFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction }};
+                                     { yawFunction, pitchFunction, rollFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
+                                     { yawFunction, throttleFunction, rollFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction },
+                                     { rollFunction, pitchFunction, yawFunction, throttleFunction, gimbalPitchFunction, gimbalYawFunction },
+                                     { rollFunction, throttleFunction, yawFunction, pitchFunction, gimbalPitchFunction, gimbalYawFunction }};
     return mapping[mode-1][function];
 }
 
@@ -570,6 +642,13 @@ void Joystick::_handleButtons()
                         _executeButtonAction(buttonAction, true);
                     }
                 }
+
+                QVariantMap buttonSettings = getButtonSettings(buttonIndex);
+                if (buttonSettings.contains("servoNumber")) {
+                    int servoNumber = buttonSettings["servoNumber"].toInt();
+                    int pwmValue = buttonSettings["pwmValue"].toInt();
+                    moveServo(servoNumber, pwmValue);
+                }
             }
             //-- Flag it as processed
             _rgButtonValues[buttonIndex] = BUTTON_REPEAT;
@@ -608,13 +687,13 @@ void Joystick::_handleAxis()
             int     axis = _rgFunctionAxis[rollFunction];
             float   roll = _adjustRange(_rgAxisValues[axis],    _rgCalibration[axis], _deadband);
 
-                    axis = _rgFunctionAxis[pitchFunction];
+            axis = _rgFunctionAxis[pitchFunction];
             float   pitch = _adjustRange(_rgAxisValues[axis],   _rgCalibration[axis], _deadband);
 
-                    axis = _rgFunctionAxis[yawFunction];
+            axis = _rgFunctionAxis[yawFunction];
             float   yaw = _adjustRange(_rgAxisValues[axis],     _rgCalibration[axis],_deadband);
 
-                    axis = _rgFunctionAxis[throttleFunction];
+            axis = _rgFunctionAxis[throttleFunction];
             float   throttle = _adjustRange(_rgAxisValues[axis],_rgCalibration[axis], _throttleMode==ThrottleModeDownZero?false:_deadband);
 
             float   gimbalPitch = 0.0f;
@@ -814,6 +893,7 @@ void Joystick::setButtonAction(int button, const QString& action)
     QSettings settings;
     settings.beginGroup(_settingsGroup);
     settings.beginGroup(_name);
+    setIsServoActionSelected(action == _servo);
     if(action.isEmpty() || action == _buttonActionNone) {
         if(_buttonActionArray[button]) {
             _buttonActionArray[button]->deleteLater();
@@ -1028,7 +1108,7 @@ void Joystick::_executeButtonAction(const QString& action, bool buttonDown)
             emit gimbalControlValue(0.0, 0.0);
         }
     } else if(action == _buttonActionEmergencyStop) {
-      if(buttonDown) emit emergencyStop();
+        if(buttonDown) emit emergencyStop();
     } else {
         if (buttonDown && _activeVehicle) {
             for (auto& item : _customMavCommands) {
@@ -1093,6 +1173,7 @@ void Joystick::_buildActionList(Vehicle* activeVehicle)
     _availableActionTitles.clear();
     //-- Available Actions
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionNone));
+    _assignableButtonActions.append(new AssignableButtonAction(this, _servo));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionArm));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionDisarm));
     _assignableButtonActions.append(new AssignableButtonAction(this, _buttonActionToggleArm));

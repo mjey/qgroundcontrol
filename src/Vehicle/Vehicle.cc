@@ -2370,7 +2370,8 @@ bool Vehicle::fixedWing() const
 
 bool Vehicle::rover() const
 {
-    return QGCMAVLink::isRoverBoat(vehicleType());
+//    return QGCMAVLink::isRoverBoat(vehicleType());
+    return QGCMAVLink::isSub(vehicleType());
 }
 
 bool Vehicle::sub() const
