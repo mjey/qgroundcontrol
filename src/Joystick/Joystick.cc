@@ -135,7 +135,7 @@ void Joystick::moveServo(int servoNumber, int pwmValue) {
         qCWarning(JoystickLog) << "Invalid servo number:" << servoNumber;
         return;
     }
-    if (pwmValue < 1000 || pwmValue > 2000) {
+    if (pwmValue < 800 || pwmValue > 2000) {
         qCWarning(JoystickLog) << "Invalid PWM value:" << pwmValue;
         return;
     }

@@ -57,11 +57,11 @@ WindowsBuild {
 # Branding
 #
 
-QGC_APP_NAME        = "QGroundControl"
-QGC_ORG_NAME        = "QGroundControl.org"
+QGC_APP_NAME        = "RoboTech"
+QGC_ORG_NAME        = "Robo-Tech.org"
 QGC_ORG_DOMAIN      = "org.qgroundcontrol"
-QGC_APP_DESCRIPTION = "Open source ground control app provided by QGroundControl dev team"
-QGC_APP_COPYRIGHT   = "Copyright (C) 2019 QGroundControl Development Team. All rights reserved."
+QGC_APP_DESCRIPTION = "Open source ground control app provided by RoboTech dev team"
+QGC_APP_COPYRIGHT   = "Copyright (C) 2023 RoboTech Development Team. All rights reserved."
 
 WindowsBuild {
     QGC_INSTALLER_SCRIPT        = "$$SOURCE_DIR\\deploy\\windows\\nullsoft_installer.nsi"
@@ -354,9 +354,9 @@ CustomBuild {
         RESOURCES += $$PWD/resources/InstrumentValueIcons/InstrumentValueIcons.qrc
     }
 } else {
-    DEFINES += QGC_APPLICATION_NAME=\"\\\"QGroundControl\\\"\"
-    DEFINES += QGC_ORG_NAME=\"\\\"QGroundControl.org\\\"\"
-    DEFINES += QGC_ORG_DOMAIN=\"\\\"org.qgroundcontrol\\\"\"
+    DEFINES += QGC_APPLICATION_NAME=\"\\\"RoboTech\\\"\"
+    DEFINES += QGC_ORG_NAME=\"\\\"Robo-Tech.org\\\"\"
+    DEFINES += QGC_ORG_DOMAIN=\"\\\"org.robo-tech\\\"\"
     RESOURCES += \
         $$PWD/qgroundcontrol.qrc \
         $$PWD/qgcresources.qrc \
