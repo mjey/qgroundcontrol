@@ -65,8 +65,8 @@ MapQuickItem {
             id:                 vehicleIcon
             source:             _adsbVehicle ? (alert ? "/qmlimages/AlertAircraft.svg" : "/qmlimages/AwarenessAircraft.svg") : vehicle.vehicleImageOpaque
             mipmap:             true
-            width:              size
-            sourceSize.width:   size
+            width:              size * 1.6
+            sourceSize.width:   size * 1.6
             fillMode:           Image.PreserveAspectFit
             transform: Rotation {
                 origin.x:       vehicleIcon.width  / 2

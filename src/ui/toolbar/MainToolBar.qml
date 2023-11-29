@@ -83,7 +83,41 @@ Rectangle {
             onClicked:          _activeVehicle.closeVehicle()
             visible:            _activeVehicle && _communicationLost && currentToolbar === flyViewToolbar
         }
+
+        QGCButton {
+            id: joystickToggleButton
+            Layout.preferredHeight: ScreenTools.defaultFontPixelHeight * 2
+            Layout.preferredWidth:  ScreenTools.defaultFontPixelWidth * 8
+//            text: "Enable Joystick"
+            background: Image {
+                source: globals.activeVehicle.joystickEnabled ? "qrc:/qmlimages/resources/enabledJoystick.svg" : "qrc:/qmlimages/resources/disabledJoystick.svg"
+                fillMode: Image.PreserveAspectFit
+            }
+            enabled: _activeJoystick ? _activeJoystick.calibrated : false
+            onClicked: {
+                globals.activeVehicle.joystickEnabled = !globals.activeVehicle.joystickEnabled
+            }
+
+            Connections {
+                target: globals.activeVehicle
+                onJoystickEnabledChanged: {
+                    joystickToggleButton.checked = globals.activeVehicle.joystickEnabled
+                }
+            }
+
+            Connections {
+                target: joystickManager
+                onActiveJoystickChanged: {
+                    if(_activeJoystick) {
+                        joystickToggleButton.checked = Qt.binding(function() { return _activeJoystick.calibrated && globals.activeVehicle.joystickEnabled })
+                    }
+                }
+            }
+        }
     }
+
+
+
 
     QGCFlickable {
         id:                     toolsFlickable

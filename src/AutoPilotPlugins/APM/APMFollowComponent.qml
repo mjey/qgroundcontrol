@@ -374,13 +374,13 @@ SetupPage {
                             anchors.horizontalCenter: parent.horizontalCenter
                             source:             controller.vehicle.vehicleImageOpaque
                             mipmap:             true
-                            height:             ScreenTools.defaultFontPixelHeight * 2.5
+                            height:             ScreenTools.defaultFontPixelHeight * 2.5 // 2.5
                             sourceSize.height:  height
                             fillMode:           Image.PreserveAspectFit
 
                             transform: Rotation {
-                                origin.x:       vehicleIcon.width  / 2
-                                origin.y:       vehicleIcon.height / 2
+                                origin.x:       vehicleIcon.width  / 2 // 2
+                                origin.y:       vehicleIcon.height / 2 // 2
                                 angle:          _roverFirmware ? 0 :
                                                                  (_followYawBehavior.rawValue == _followYawBehaviorNone ?
                                                                       0 :
@@ -451,7 +451,7 @@ SetupPage {
                         id:                 vehicleIconHeight
                         source:             controller.vehicle.vehicleImageOpaque
                         mipmap:             true
-                        height:             ScreenTools.defaultFontPixelHeight * 2.5
+                        height:             ScreenTools.defaultFontPixelHeight * 5 // 2.5
                         sourceSize.height:  height
                         fillMode:           Image.PreserveAspectFit
 
