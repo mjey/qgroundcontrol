@@ -79,7 +79,7 @@ ColumnLayout {
                     }
                     QGCComboBox {
                         id:                         buttonActionCombo
-                        width:                      ScreenTools.defaultFontPixelWidth * 26
+                        width:                      ScreenTools.defaultFontPixelWidth * 16
                         model:                      _activeJoystick ? _activeJoystick.assignableActionTitles : []
                         sizeToContents:             true
                         property int  servoPopupIndex: 0
@@ -126,6 +126,8 @@ ColumnLayout {
                         text: qsTr("Settings")
                         primary: true
                         property int buttonIndex: index
+                        width: ScreenTools.defaultFontPixelWidth * 10
+                        height: ScreenTools.defaultFontPixelHeight * 1.7
                         onClicked: showButtonSettingsPopup(buttonIndex)
                         enabled: false
                         anchors.verticalCenter: parent.verticalCenter
@@ -310,72 +312,5 @@ ColumnLayout {
             }
         }
     }
-    Popup {
-        id: settingsPopup
 
-        property int servoNumber: 0
-        property int pwmValue: 0
-        property int repTime: 0
-        property int delay: 0
-
-        property int buttonIndex: -1
-
-        signal settingsUpdated(int servoNumber, int pwmValue, int repTime, int delay)
-
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-
-        ColumnLayout {
-            anchors.fill: parent
-            spacing: 10
-
-            TextField {
-                id: servoNumberField
-//                label: "Servo No#"
-                text: settingsPopup.servoNumber.toString()
-            }
-
-            TextField {
-                id: pwmValueField
-//                label: "PWM Value"
-                text: settingsPopup.pwmValue.toString()
-            }
-
-            TextField {
-                id: repTimeField
-//                label: "Rep Time"
-                text: settingsPopup.repTime.toString()
-            }
-
-            TextField {
-                id: delayField
-//                label: "Delay (ms)"
-                text: settingsPopup.delay.toString()
-            }
-
-            RowLayout {
-                Layout.alignment: Qt.AlignRight
-                Layout.fillWidth: true
-
-                Button {
-                    text: qsTr("Save")
-                    onClicked: {
-                        settingsPopup.settingsUpdated(
-                            parseInt(servoNumberField.text),
-                            parseInt(pwmValueField.text),
-                            parseInt(repTimeField.text),
-                            parseInt(delayField.text)
-                        )
-                        settingsPopup.close()
-                    }
-                }
-
-                Button {
-                    text: qsTr("Cancel")
-                    onClicked: settingsPopup.close()
-                }
-            }
-        }
-    }
 }

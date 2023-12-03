@@ -7,7 +7,7 @@ Popup {
     id: settingsPopup
     property int buttonIndex: -1
     width: parent.width * 0.8
-    height: parent.height * 0.6
+    height: parent.height * 1
     modal: true
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
 
